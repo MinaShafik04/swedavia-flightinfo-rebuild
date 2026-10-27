@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Environment secrets and API keys (NEVER commit secrets!)
+.env
+.env.local
+*.env
+
+# Python byte-code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

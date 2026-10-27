@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Flight {{ flight.flight_id }} — Swedavia FlightInfo{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-8">
+    <div class="mb-3">
+      <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill">
+        <i class="bi bi-arrow-left me-1"></i> Back
+      </a>
+    </div>
+
+    <div class="card detail-card shadow-sm border-0 mb-4 overflow-hidden">
+      <!-- Card Header -->
+      <div class="card-header border-0 py-4 px-4 px-md-5" style="background: linear-gradient(135deg, #0b3954 0%, #133c55 100%); color: white;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill mb-2">
+              {{ flight.flight_type_label | upper }}
+            </span>
+            <h2 class="display-6 fw-bold mb-1">{{ flight.flight_id }}</h2>
+            <div class="lead text-white-50">{{ flight.airline_display or 'Commercial Airline' }}</div>
+          </div>
+          <div>
+            <span class="badge badge-status badge-{{ flight.status_code }} px-4 py-2 fs-6 rounded-pill">
+              {{ flight.status_label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card-body p-4 p-md-5">
+        <!-- Route / Airport overview -->
+        <div class="row g-4 mb-4 pb-4 border-bottom">
+          <div class="col-md-6">
+            <div class="detail-label">
+              {% if flight.flight_type == 'A' %}Origin (Departure Airport){% else %}Current Airport{% endif %}
+            </div>
+            <div class="detail-value text-primary mt-1">
+              {% if flight.flight_type == 'A' %}
+                {{ flight.location_display }}
+              {% else %}
+                {{ current_airport_name }} ({{ current_airport }})
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="detail-label">
+              {% if flight.flight_type == 'A' %}Destination (Arrival Airport){% else %}Destination (Arrival Airport){% endif %}
+            </div>
+            <div class="detail-value text-success mt-1">
+              {% if flight.flight_type == 'A' %}
+                {{ current_airport_name }} ({{ current_airport }})
+              {% else %}
+                {{ flight.location_display }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Times Overview (Swedish Local Time) -->
+        <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-clock-history text-primary me-2"></i>Flight Schedule (Swedish Local Time)</h5>
+        <div class="row g-3 mb-4 pb-4 border-bottom">
+          <div class="col-sm-4">
+            <div class="p-3 bg-light rounded-3">
+              <div class="detail-label">Scheduled Time</div>
+              <div class="detail-value mt-1">{{ flight.scheduled_time }}</div>
+              <div class="small text-muted">{{ flight.scheduled_datetime }}</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="p-3 bg-light rounded-3">
+              <div class="detail-label">Estimated Time</div>
+              <div class="detail-value mt-1 text-info">{{ flight.estimated_time }}</div>
+              <div class="small text-muted">UTC: {{ flight.estimated_utc or 'N/A' }}</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="p-3 bg-light rounded-3">
+              <div class="detail-label">Actual Time</div>
+              <div class="detail-value mt-1 text-success">{{ flight.actual_time }}</div>
+              <div class="small text-muted">UTC: {{ flight.actual_utc or 'N/A' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Airport Logistics: Terminal, Gate, Baggage, Check-in -->
+        <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-building text-info me-2"></i>Airport Logistics</h5>
+        <div class="row g-3 mb-4 pb-4 border-bottom">
+          <div class="col-sm-3 col-6">
+            <div class="detail-label">Terminal</div>
+            <div class="detail-value mt-1">{{ flight.terminal or '—' }}</div>
+          </div>
+          <div class="col-sm-3 col-6">
+            <div class="detail-label">Gate</div>
+            <div class="detail-value mt-1 text-warning">{{ flight.gate or '—' }}</div>
+          </div>
+          <div class="col-sm-3 col-6">
+            <div class="detail-label">Baggage Claim</div>
+            <div class="detail-value mt-1">{{ flight.baggage_claim or '—' }}</div>
+          </div>
+          <div class="col-sm-3 col-6">
+            <div class="detail-label">Check-in Desks</div>
+            <div class="detail-value mt-1">{{ flight.check_in or '—' }}</div>
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        {% if flight.remarks %}
+          <div class="mb-4">
+            <h6 class="fw-bold text-dark"><i class="bi bi-info-circle text-primary me-2"></i>Remarks & Announcements</h6>
+            <ul class="list-group list-group-flush">
+              {% for rem in flight.remarks %}
+                <li class="list-group-item px-0 text-muted">{{ rem }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Raw JSON Data Dropdown (For Technical / Assignment Inspection) -->
+        <div class="mt-4 pt-3">
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#rawJsonCollapse">
+            <i class="bi bi-code-slash me-1"></i> Technical Inspection (Raw API JSON)
+          </button>
+          <div class="collapse mt-3" id="rawJsonCollapse">
+            <div class="card card-body bg-dark text-light p-3 rounded-3" style="max-height: 350px; overflow-y: auto;">
+              <pre class="m-0 text-warning" style="font-size: 0.8rem;"><code>{{ raw_json }}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

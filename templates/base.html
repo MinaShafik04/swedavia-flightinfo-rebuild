@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Swedavia FlightInfo Dashboard{% endblock %}</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Custom Styling -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-airport sticky-top">
+    <div class="container-fluid px-lg-4">
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+        <i class="bi bi-airplane-engines-fill text-warning me-2 fs-4"></i>
+        <span>Swedavia FlightInfo</span>
+        <span class="badge bg-light text-dark ms-2 d-none d-sm-inline" style="font-size: 0.7rem;">v2.0 Web</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('index') }}">
+              <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'arrivals' %}active{% endif %}" href="{{ url_for('arrivals_view') }}">
+              <i class="bi bi-box-arrow-in-down-right me-1"></i> Arrivals
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'departures' %}active{% endif %}" href="{{ url_for('departures_view') }}">
+              <i class="bi bi-box-arrow-up-right me-1"></i> Departures
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'search' %}active{% endif %}" href="{{ url_for('search_view') }}">
+              <i class="bi bi-search me-1"></i> Flight Search
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'odata' %}active{% endif %}" href="{{ url_for('odata_view') }}">
+              <i class="bi bi-funnel me-1"></i> OData Queries
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-warning {% if active_page == 'offline_demo' %}active{% endif %}" href="{{ url_for('offline_demo_view') }}">
+              <i class="bi bi-laptop me-1"></i> Offline Demo <span class="badge bg-warning text-dark">Sample</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Right Side: Airport Selector & API Status Indicator -->
+        <div class="d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
+          <!-- Airport Switcher Form -->
+          <form action="{{ url_for('set_airport') }}" method="POST" class="d-flex align-items-center m-0">
+            <div class="airport-selector-wrapper d-flex align-items-center">
+              <i class="bi bi-geo-alt-fill text-warning me-1"></i>
+              <select name="airport" class="airport-selector-select form-select-sm" onchange="this.form.submit()">
+                {% for code, name in all_airports.items() %}
+                  <option value="{{ code }}" {% if current_airport == code %}selected{% endif %}>
+                    {{ code }} - {{ name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </form>
+
+          <!-- API Connectivity Badge -->
+          <span class="badge rounded-pill {% if api_status %}bg-success{% else %}bg-secondary{% endif %} px-3 py-2 d-flex align-items-center">
+            <i class="bi {% if api_status %}bi-check-circle-fill{% else %}bi-wifi-off{% endif %} me-1"></i>
+            {% if api_status %}API Online{% else %}API Status{% endif %}
+          </span>
+
+          <!-- Swedish Local Time Pill -->
+          <span class="badge bg-dark text-light border border-secondary px-3 py-2 d-none d-md-inline" title="Swedish Local Time (Europe/Stockholm)">
+            <i class="bi bi-clock me-1 text-info"></i> {{ swedish_time_now }} CET
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  <div class="container-fluid px-lg-4 mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="main-content container-fluid px-lg-4 py-3">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container-fluid px-lg-4">
+      <div class="row align-items-center">
+        <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+          <span class="fw-bold text-light">Swedavia FlightInfo Rebuild</span>
+          <span class="ms-2">| Reverse Engineering Assignment</span>
+          <div class="small text-secondary mt-1">
+            Data provided by official <a href="https://developer.swedavia.se" target="_blank" rel="noopener">Swedavia FlightInfo API v2</a>. All display times converted to Swedish Local Time (Europe/Stockholm).
+          </div>
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          <span class="badge bg-secondary me-2">Python 3.13</span>
+          <span class="badge bg-secondary me-2">Flask Web</span>
+          <span class="badge bg-secondary">Terminal Compatible</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

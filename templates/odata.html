@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}OData Advanced Query — Swedavia FlightInfo{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Header Banner -->
+  <div class="col-12">
+    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon bg-primary bg-opacity-10 text-primary fs-3">
+          <i class="bi bi-funnel-fill"></i>
+        </div>
+        <div>
+          <h2 class="fw-bold mb-1">OData Advanced Flight Queries</h2>
+          <p class="text-muted mb-0">Query the official Swedavia API v2 query endpoint using OData standard filter syntax.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Form & Documentation -->
+  <div class="col-lg-5">
+    <!-- Query Input Form -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h5 class="fw-bold mb-0">Run Query</h5>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <form method="POST" action="{{ url_for('odata_view') }}">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted">OData Filter Expression</label>
+            <textarea name="filter" id="filterInput" class="form-control font-monospace" rows="4" placeholder="airport eq 'ARN' and scheduled eq '{{ today_date }}' and flightType eq 'A'" required>{{ current_filter }}</textarea>
+            <div class="form-text small">Use standard OData operators: <code>eq</code>, <code>and</code>. Values must be in single quotes.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">
+            <i class="bi bi-play-fill me-1"></i> Execute Query
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 1-Click Example Queries -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h6 class="fw-bold mb-0"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Quick Example Queries</h6>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <p class="small text-muted mb-3">Click any example below to automatically load it into the query box:</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" onclick="setQuery(&quot;airport eq '{{ current_airport }}' and scheduled eq '{{ today_date }}' and flightType eq 'A'&quot;)">
+            <span class="badge bg-primary me-1">Arrivals</span> {{ current_airport }} arrivals today
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" onclick="setQuery(&quot;airport eq '{{ current_airport }}' and scheduled eq '{{ today_date }}' and flightType eq 'D'&quot;)">
+            <span class="badge bg-info me-1">Departures</span> {{ current_airport }} departures today
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" onclick="setQuery(&quot;airport eq 'GOT' and scheduled eq '{{ today_date }}' and flightType eq 'A'&quot;)">
+            <span class="badge bg-secondary me-1">Airport</span> Landvetter (GOT) arrivals today
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" onclick="setQuery(&quot;airport eq 'ARN' and scheduled eq '{{ today_date }}' and flightId eq 'SK142'&quot;)">
+            <span class="badge bg-warning text-dark me-1">FlightId</span> Arlanda flight SK142 today
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supported Fields Reference -->
+    <div class="card border-0 rounded-4 shadow-sm">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h6 class="fw-bold mb-0"><i class="bi bi-book me-2 text-primary"></i>Official Supported Fields</h6>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <table class="table table-sm small mb-0">
+          <thead>
+            <tr><th>Field</th><th>Description</th><th>Example</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>airport</code></td><td>3-letter IATA code</td><td><code>airport eq 'ARN'</code></td></tr>
+            <tr><td><code>flightType</code></td><td>'A' (arr) or 'D' (dep)</td><td><code>flightType eq 'A'</code></td></tr>
+            <tr><td><code>scheduled</code></td><td>Date (YYYY-MM-DD)</td><td><code>scheduled eq '2026-10-27'</code></td></tr>
+            <tr><td><code>flightId</code></td><td>Flight identifier</td><td><code>flightId eq 'SK142'</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Results Table -->
+  <div class="col-lg-7">
+    <div class="card border-0 rounded-4 shadow-sm h-100">
+      <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Query Results</h5>
+        {% if results %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+            {{ results | length }} flight(s) matched
+          </span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if executed %}
+          {% if results %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Flight</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Scheduled</th>
+                    <th>Actual/Est</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for f in results %}
+                    <tr>
+                      <td>
+                        <a href="{{ url_for('flight_detail_view', flight_id=f.flight_id) }}" class="fw-bold text-decoration-none">
+                          {{ f.flight_id }}
+                        </a>
+                      </td>
+                      <td>
+                        <span class="badge {% if f.flight_type == 'A' %}bg-primary{% else %}bg-info{% endif %} bg-opacity-75">
+                          {{ f.flight_type_label }}
+                        </span>
+                      </td>
+                      <td>{{ f.location_display }}</td>
+                      <td>{{ f.scheduled_time }}</td>
+                      <td>{{ f.effective_time }}</td>
+                      <td>
+                        <span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-search text-secondary fs-1 d-block mb-2"></i>
+              <h5>No flights matched your query</h5>
+              <p class="small">Check the syntax and ensure values use single quotes (e.g. <code>airport eq 'ARN'</code>).</p>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-funnel text-secondary fs-1 d-block mb-2"></i>
+            <h5>No query executed yet</h5>
+            <p class="small">Enter an OData filter or choose one of the quick examples to run a query.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setQuery(query) {
+  document.getElementById('filterInput').value = query;
+}
+</script>
+{% endblock %}

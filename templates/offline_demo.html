@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Offline Demo [SAMPLE DATA] — Swedavia FlightInfo{% endblock %}
+
+{% block content %}
+<!-- Prominent Sample Data Disclaimer Banner -->
+<div class="sample-data-banner shadow-sm">
+  <div class="d-flex align-items-center gap-3">
+    <div class="fs-1 text-warning">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <div>
+      <h4 class="fw-bold mb-1 text-dark">OFFLINE DEMO MODE — SAMPLE DATA ONLY</h4>
+      <p class="mb-0 text-dark">
+        <strong>This page uses FICTIONAL SAMPLE FLIGHT DATA.</strong> It does not connect to the live Swedavia API and requires no API key.
+        All flight schedules, routes, and operational statuses shown below are pre-recorded sample records created solely for software demonstration and testing.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Offline Demo Navigation Tabs -->
+<ul class="nav nav-pills mb-4 gap-2" id="demoTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if tab == 'arrivals' %}active{% endif %} fw-semibold" href="{{ url_for('offline_demo_view', tab='arrivals') }}">
+      <i class="bi bi-box-arrow-in-down-right me-1"></i> Sample Arrivals ({{ arrivals_count }})
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if tab == 'departures' %}active{% endif %} fw-semibold" href="{{ url_for('offline_demo_view', tab='departures') }}">
+      <i class="bi bi-box-arrow-up-right me-1"></i> Sample Departures ({{ departures_count }})
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if tab == 'search' %}active{% endif %} fw-semibold" href="{{ url_for('offline_demo_view', tab='search') }}">
+      <i class="bi bi-search me-1"></i> Sample Flight Search
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if tab == 'odata' %}active{% endif %} fw-semibold" href="{{ url_for('offline_demo_view', tab='odata') }}">
+      <i class="bi bi-funnel me-1"></i> Sample OData Filtering
+    </a>
+  </li>
+</ul>
+
+{% if tab == 'arrivals' or tab == 'departures' %}
+  <!-- Flight Board for Sample Arrivals / Departures -->
+  <div class="card flight-table border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="fw-bold mb-0">
+          {% if tab == 'arrivals' %}Sample Arrivals — Stockholm Arlanda (ARN){% else %}Sample Departures — Stockholm Arlanda (ARN){% endif %}
+        </h5>
+        <span class="badge bg-warning text-dark mt-1">[SAMPLE DATA - NOT LIVE]</span>
+      </div>
+      <div class="text-muted small">
+        Demonstrating pagination (Page {{ current_page }} of {{ total_pages }})
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Flight</th>
+            <th>{% if tab == 'arrivals' %}Origin (From){% else %}Destination (To){% endif %}</th>
+            <th>Airline</th>
+            <th>Scheduled (Swedish)</th>
+            <th>Actual / Est</th>
+            <th>Status</th>
+            <th>Terminal</th>
+            <th>Gate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in flights %}
+            <tr>
+              <td>
+                <strong class="text-primary">{{ f.flight_id }}</strong>
+                <span class="badge bg-light text-muted border ms-1">Sample</span>
+              </td>
+              <td><span class="fw-semibold">{{ f.location_display }}</span></td>
+              <td>{{ f.airline_display }}</td>
+              <td>{{ f.scheduled_time }}</td>
+              <td>
+                <span class="fw-bold {% if f.status_code == 'DEL' %}text-warning{% elif f.status_code == 'CAN' %}text-danger{% elif f.actual_time != '--:--' %}text-success{% endif %}">
+                  {{ f.effective_time }}
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span>
+              </td>
+              <td>{{ f.terminal or '-' }}</td>
+              <td>{{ f.gate or '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination Controls for Sample Flights -->
+  {% if total_pages > 1 %}
+    <nav class="d-flex justify-content-between align-items-center">
+      <div class="text-muted small">
+        Showing {{ (current_page - 1) * per_page + 1 }} to {{ [current_page * per_page, total_count] | min }} of {{ total_count }} sample flights
+      </div>
+      <ul class="pagination pagination-sm m-0">
+        <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('offline_demo_view', tab=tab, page=current_page-1) }}">&laquo; Previous</a>
+        </li>
+        {% for p in range(1, total_pages + 1) %}
+          <li class="page-item {% if p == current_page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('offline_demo_view', tab=tab, page=p) }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+        <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('offline_demo_view', tab=tab, page=current_page+1) }}">Next &raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  {% endif %}
+
+{% elif tab == 'search' %}
+  <!-- Offline Flight Search -->
+  <div class="row g-4">
+    <div class="col-md-5">
+      <div class="card border-0 rounded-4 shadow-sm p-4">
+        <h5 class="fw-bold mb-3">Search Sample Records</h5>
+        <form method="GET" action="{{ url_for('offline_demo_view') }}">
+          <input type="hidden" name="tab" value="search">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted">Flight Number</label>
+            <input type="text" name="q" class="form-control" placeholder="e.g. SK142, LH784, BA782" value="{{ search_query }}" required>
+          </div>
+          <button type="submit" class="btn btn-warning text-dark fw-bold w-100">
+            <i class="bi bi-search me-1"></i> Search Sample Dataset
+          </button>
+        </form>
+
+        <div class="mt-4">
+          <h6 class="small fw-bold text-muted text-uppercase">Available Sample Flights to Test:</h6>
+          <div class="d-flex flex-wrap gap-1 mt-2">
+            {% for fid in sample_flight_ids %}
+              <a href="{{ url_for('offline_demo_view', tab='search', q=fid) }}" class="badge bg-light text-dark text-decoration-none border p-2">
+                {{ fid }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div class="card border-0 rounded-4 shadow-sm p-4">
+        <h5 class="fw-bold mb-3">Search Result <span class="badge bg-warning text-dark">[SAMPLE DATA]</span></h5>
+        {% if search_result %}
+          <div class="alert alert-success d-flex align-items-center">
+            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+            <div>Found <strong>{{ search_result | length }}</strong> matching sample record(s) for query: <code>{{ search_query }}</code></div>
+          </div>
+          {% for f in search_result %}
+            <div class="p-3 bg-light rounded-3 mb-3 border">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="fw-bold mb-0 text-primary">{{ f.flight_id }}</h4>
+                <span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span>
+              </div>
+              <div class="row g-2 small">
+                <div class="col-6"><strong>Type:</strong> {{ f.flight_type_label }}</div>
+                <div class="col-6"><strong>Airline:</strong> {{ f.airline_display }}</div>
+                <div class="col-6"><strong>Route:</strong> {{ f.location_display }}</div>
+                <div class="col-6"><strong>Scheduled:</strong> {{ f.scheduled_time }} (Swedish)</div>
+                <div class="col-6"><strong>Terminal:</strong> {{ f.terminal or 'N/A' }}</div>
+                <div class="col-6"><strong>Gate:</strong> {{ f.gate or 'N/A' }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% elif search_query %}
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i> No sample flight found matching "<strong>{{ search_query }}</strong>". Try one of the buttons on the left.
+          </div>
+        {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
+            <p>Enter a flight number or click one of the suggested sample flight IDs to view its details.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% elif tab == 'odata' %}
+  <!-- Offline OData Filtering Demonstration -->
+  <div class="card border-0 rounded-4 shadow-sm p-4">
+    <h5 class="fw-bold mb-2">Simulated OData Filtering on Sample Flights</h5>
+    <p class="text-muted small mb-4">
+      This demonstrates how OData filters work by filtering the sample flight dataset locally in Python without making any external API calls.
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <a href="{{ url_for('offline_demo_view', tab='odata', filter='delayed') }}" class="btn btn-sm {% if odata_filter == 'delayed' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+        Delayed Flights [flightLegStatus eq 'DEL']
+      </a>
+      <a href="{{ url_for('offline_demo_view', tab='odata', filter='cancelled') }}" class="btn btn-sm {% if odata_filter == 'cancelled' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+        Cancelled Flights [flightLegStatus eq 'CAN']
+      </a>
+      <a href="{{ url_for('offline_demo_view', tab='odata', filter='sas') }}" class="btn btn-sm {% if odata_filter == 'sas' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+        SAS Flights [airlineOperator/iata eq 'SK']
+      </a>
+      <a href="{{ url_for('offline_demo_view', tab='odata', filter='lhr') }}" class="btn btn-sm {% if odata_filter == 'lhr' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+        London Heathrow Flights [location eq 'LHR']
+      </a>
+    </div>
+
+    {% if odata_results is not none %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Flight</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Airline</th>
+              <th>Scheduled</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in odata_results %}
+              <tr>
+                <td><strong>{{ f.flight_id }}</strong></td>
+                <td><span class="badge {% if f.flight_type == 'A' %}bg-primary{% else %}bg-info{% endif %}">{{ f.flight_type_label }}</span></td>
+                <td>{{ f.location_display }}</td>
+                <td>{{ f.airline_display }}</td>
+                <td>{{ f.scheduled_time }}</td>
+                <td><span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center py-4 text-muted">No sample flights matched this filter.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

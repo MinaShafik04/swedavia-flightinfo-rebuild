@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Swedavia FlightInfo{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <!-- Airport Header Banner -->
+  <div class="col-12">
+    <div class="card border-0 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #0b3954 0%, #087e8b 100%); color: white;">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <div class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-2">
+              <i class="bi bi-geo-alt-fill me-1"></i> ACTIVE AIRPORT
+            </div>
+            <h1 class="display-6 fw-bold mb-1">{{ airport_name }}</h1>
+            <p class="lead mb-0 text-white-50">IATA Code: <strong class="text-white">{{ current_airport }}</strong> | Real-Time Flight Monitoring Dashboard</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('arrivals_view') }}" class="btn btn-light text-primary fw-semibold px-4 py-2 rounded-pill shadow-sm">
+              <i class="bi bi-box-arrow-in-down-right me-1"></i> View Arrivals
+            </a>
+            <a href="{{ url_for('departures_view') }}" class="btn btn-outline-light fw-semibold px-4 py-2 rounded-pill">
+              <i class="bi bi-box-arrow-up-right me-1"></i> View Departures
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Metric Cards -->
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100 p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Today's Arrivals</div>
+          <h2 class="fw-bold mt-2 mb-0">{{ arrivals_count }}</h2>
+          <small class="text-muted">Flights scheduled</small>
+        </div>
+        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+          <i class="bi bi-airplane-fill" style="transform: rotate(45deg);"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100 p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Today's Departures</div>
+          <h2 class="fw-bold mt-2 mb-0">{{ departures_count }}</h2>
+          <small class="text-muted">Flights scheduled</small>
+        </div>
+        <div class="stat-icon bg-info bg-opacity-10 text-info">
+          <i class="bi bi-airplane-fill" style="transform: rotate(-45deg);"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100 p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">API Connectivity</div>
+          <h4 class="fw-bold mt-2 mb-0 {% if api_status %}text-success{% else %}text-danger{% endif %}">
+            {% if api_status %}Operational{% else %}Offline{% endif %}
+          </h4>
+          <small class="text-muted">Swedavia API v2</small>
+        </div>
+        <div class="stat-icon {% if api_status %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if api_status %}text-success{% else %}text-danger{% endif %}">
+          <i class="bi {% if api_status %}bi-broadcast{% else %}bi-broadcast-pin{% endif %}"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100 p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Local Time Zone</div>
+          <h3 class="fw-bold mt-2 mb-0">{{ swedish_time_now }}</h3>
+          <small class="text-muted">Europe/Stockholm (CET)</small>
+        </div>
+        <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+          <i class="bi bi-clock-history"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Flight Search Bar -->
+<div class="card border-0 rounded-4 shadow-sm mb-4">
+  <div class="card-body p-4">
+    <form action="{{ url_for('search_view') }}" method="GET" class="row g-3 align-items-center">
+      <div class="col-md-5">
+        <label class="form-label small fw-bold text-uppercase text-muted">Flight Number</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+          <input type="text" name="flight_id" class="form-control" placeholder="e.g. SK142, AY928, DY456" required>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-bold text-uppercase text-muted">Date</label>
+        <input type="date" name="date" class="form-control" value="{{ today_date }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-bold text-uppercase text-muted">Type</label>
+        <select name="type" class="form-select">
+          <option value="both">All (Arrivals & Departures)</option>
+          <option value="A">Arrivals Only</option>
+          <option value="D">Departures Only</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+          <i class="bi bi-search me-1"></i> Search
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quick Overview Tables: Recent/Upcoming Arrivals and Departures -->
+<div class="row g-4">
+  <!-- Recent Arrivals Preview -->
+  <div class="col-lg-6">
+    <div class="card border-0 rounded-4 shadow-sm h-100">
+      <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-box-arrow-in-down-right text-primary me-2"></i>Upcoming Arrivals
+        </h5>
+        <a href="{{ url_for('arrivals_view') }}" class="btn btn-sm btn-outline-primary rounded-pill">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Flight</th>
+              <th>Origin</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in upcoming_arrivals %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('flight_detail_view', flight_id=f.flight_id) }}" class="fw-bold text-decoration-none">
+                    {{ f.flight_id }}
+                  </a>
+                  <div class="small text-muted">{{ f.airline_iata or f.airline_name }}</div>
+                </td>
+                <td>{{ f.location_display }}</td>
+                <td>
+                  <span class="fw-semibold">{{ f.effective_time }}</span>
+                  {% if f.actual_time != '--:--' and f.actual_time != f.scheduled_time %}
+                    <span class="badge bg-light text-muted border ms-1">Sched: {{ f.scheduled_time }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No arrival flights available for today.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Departures Preview -->
+  <div class="col-lg-6">
+    <div class="card border-0 rounded-4 shadow-sm h-100">
+      <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-box-arrow-up-right text-info me-2"></i>Upcoming Departures
+        </h5>
+        <a href="{{ url_for('departures_view') }}" class="btn btn-sm btn-outline-info rounded-pill">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Flight</th>
+              <th>Destination</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in upcoming_departures %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('flight_detail_view', flight_id=f.flight_id) }}" class="fw-bold text-decoration-none">
+                    {{ f.flight_id }}
+                  </a>
+                  <div class="small text-muted">{{ f.airline_iata or f.airline_name }}</div>
+                </td>
+                <td>{{ f.location_display }}</td>
+                <td>
+                  <span class="fw-semibold">{{ f.effective_time }}</span>
+                  {% if f.actual_time != '--:--' and f.actual_time != f.scheduled_time %}
+                    <span class="badge bg-light text-muted border ms-1">Sched: {{ f.scheduled_time }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-status badge-{{ f.status_code }}">{{ f.status_label }}</span>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No departure flights available for today.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
